@@ -85,16 +85,6 @@ xai-console(
         format => 'values');
 ```
 
-
-### Images
-
-Images can be generated via the sub `xai-console` by setting the argument "path" to "image". 
-Here is an example:
-
-```raku, eval=FALSE
-xai-console('Generate an image of a raccoon chasing a butterfly.', format => 'values');
-```
-
 ### Chat completions with engineered prompts
 
 Here is a prompt for "emojification" (see the
