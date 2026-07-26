@@ -77,20 +77,10 @@ The current XlAI models can be found with the function `xai-models`:
 There are two types of completions : text and chat. Let us illustrate the differences
 of their usage by Raku code generation. Here is a text completion:
 
-```raku
+```raku, result=asis
 xai-console(
         'generate Raku code for making a loop over a list',
         path => 'code',
-        max-tokens => 1024,
-        format => 'values');
-```
-
-Here is a chat completion:
-
-```raku
-xai-console(
-        'generate Raku code for making a loop over a list',
-        path => 'chat',
         max-tokens => 1024,
         format => 'values');
 ```
