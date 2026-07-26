@@ -1,0 +1,25 @@
+use v6.d;
+use Test;
+use WWW::XAI;
+
+my $has-key = %*ENV<XAI_API_KEY>:exists;
+$has-key = True if %*ENV<GROKXAI_API_KEY>:exists;
+
+if $has-key {
+    plan 2;
+
+    my $answer = xai-console(
+        'Reply with exactly: pong',
+        path => 'chat',
+        model => (%*ENV<XAI_MODEL> // 'grok-4.5'),
+        format => 'values',
+        :echo
+    );
+
+    say (:$answer);
+    ok $answer ~~ Str && $answer.chars, 'chat returns assistant text';
+    like $answer.lc, /pong/, 'chat response contains the requested text';
+} else {
+    plan 1;
+    skip 'Set XAI_API_KEY (or GROKXAI_API_KEY) to run live xAI chat tests', 1;
+}

@@ -1,2 +1,3 @@
-# Raku-WWW-Grok
-Raku package that provides access to the LLMs of Grok.
+# Raku-WWW-XAI
+
+Raku package that provides API access to the LLMs of XAI.
