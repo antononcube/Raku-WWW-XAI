@@ -13,7 +13,22 @@ sub process_input($text, $role) {
 }
 
 
-#| Access the xAI Responses, image, video, and text-to-speech APIs.
+#==========================================================
+#
+#==========================================================
+sub xai-models(
+        :api-key(:$auth-key) = Whatever,
+        Str:D :$method = 'tiny',
+        UInt:D :$timeout = 10,
+        Bool:D :$echo = False) is export {
+    xai-console('', path => 'models', :$auth-key, :$method, :$timeout, :$echo)
+}
+
+#==========================================================
+# XAI console
+#==========================================================
+
+#| Access the XAI responses, images, videos, and text-to-speech APIs.
 our proto xai-console($text = '', Str:D :$path = 'chat', *%args) is export {*}
 
 multi sub xai-console(*%args) {
@@ -55,7 +70,7 @@ multi sub xai-console(Str:D $text,
             %body<tools> = @tools.Array if @tools;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <instructions stream store reasoning_effort stop>);
         }
-        when $_ ∈ <image images/generations> {
+        when $_ ∈ <image images images/generations> {
             $url ~= '/images/generations';
             %body = :$model, prompt => $text.Str;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n response_format aspect_ratio>);
@@ -63,7 +78,7 @@ multi sub xai-console(Str:D $text,
         when $_ ∈ <models> {
             $url ~= '/models';
         }
-        when $_ ∈ <video videos/generations> {
+        when $_ ∈ <video videos videos/generations> {
             $url ~= '/videos/generations';
             %body = :$model, prompt => $text.Str;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <duration aspect_ratio resolution>);
