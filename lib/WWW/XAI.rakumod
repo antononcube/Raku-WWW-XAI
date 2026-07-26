@@ -46,9 +46,10 @@ sub process_messages(@messages) {
 sub xai-models(
         :api-key(:$auth-key) = Whatever,
         Str:D :$method = 'tiny',
+        :$format = 'values',
         UInt:D :$timeout = 10,
         Bool:D :$echo = False) is export {
-    xai-console('', path => 'models', :$auth-key, :$method, :$timeout, :$echo)
+    xai-console('', path => 'models', :$auth-key, :$method, :$timeout, :$format, :$echo)
 }
 
 #==========================================================
@@ -82,7 +83,7 @@ multi sub xai-console(Str:D $text,
                       :@tools = Empty,
                       :$input = Whatever,
                       *%args) {
-    if $model.isa(Whatever) { $model = 'grok-3' }
+    if $model.isa(Whatever) { $model = 'grok-4.3' }
     my $echo = %args<echo> // False;
     my $endpoint = $path.lc;
     my $url = 'https://api.x.ai/v1';
