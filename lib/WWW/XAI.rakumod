@@ -3,8 +3,18 @@ unit module WWW::XAI;
 use JSON::Fast;
 use WWW::XAI::Request;
 
+#==========================================================
+# Utilities
+#==========================================================
+
+sub process_input($text, $role) {
+    return $text unless $role ~~ Str:D;
+    [{ role => $role, content => $text.Str },];
+}
+
+
 #| Access the xAI Responses, image, video, and text-to-speech APIs.
-our proto xai-console($text = '', Str :$path = 'chat', *%args) is export {*}
+our proto xai-console($text = '', Str:D :$path = 'chat', *%args) is export {*}
 
 multi sub xai-console(*%args) {
     xai-console('', |%args);
@@ -14,13 +24,13 @@ multi sub xai-console(@texts, *%args) {
     @texts.map({ xai-console($_, |%args) }).Array;
 }
 
-multi sub xai-console($text,
-                      Str :$path = 'chat',
+multi sub xai-console(Str:D $text,
+                      Str:D :$path = 'chat',
                       :api-key(:$auth-key) = Whatever,
-                      UInt :$timeout = 10,
+                      UInt:D :$timeout = 10,
                       :$format = Whatever,
-                      Str :$method = 'tiny',
-                      Str :$model = 'grok-4.5',
+                      Str:D :$method = 'tiny',
+                      :$model is copy = Whatever,
                       :$role = Whatever,
                       :max-tokens(:$max-output-tokens) = Whatever,
                       :$temperature = Whatever,
@@ -28,8 +38,9 @@ multi sub xai-console($text,
                       :@tools = Empty,
                       :$input = Whatever,
                       *%args) {
+    if $model.isa(Whatever) { $model = 'grok-3' }
     my $echo = %args<echo> // False;
-    my $endpoint = $path.lc.subst(/^ 'generate' /, '').subst(/^ '/' /, '');
+    my $endpoint = $path.lc;
     my $url = 'https://api.x.ai/v1';
     my %body;
 
@@ -37,24 +48,24 @@ multi sub xai-console($text,
         when $_ ∈ <chat code responses> {
             $url ~= '/responses';
             %body<model> = $model;
-            %body<input> = $input.isa(Whatever) ?? _input($text, $role) !! $input;
+            %body<input> = $input.isa(Whatever) ?? process_input($text, $role) !! $input;
             %body<max_output_tokens> = $max-output-tokens unless $max-output-tokens.isa(Whatever);
             %body<temperature> = $temperature unless $temperature.isa(Whatever);
             %body<top_p> = $top-p unless $top-p.isa(Whatever);
             %body<tools> = @tools.Array if @tools;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <instructions stream store reasoning_effort stop>);
         }
-        when $_ eq 'image' {
+        when $_ ∈ <image images/generations> {
             $url ~= '/images/generations';
             %body = :$model, prompt => $text.Str;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n response_format aspect_ratio>);
         }
-        when $_ eq 'video' {
+        when $_ ∈ <video videos/generations> {
             $url ~= '/videos/generations';
             %body = :$model, prompt => $text.Str;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <duration aspect_ratio resolution>);
         }
-        when $_ eq 'voice' {
+        when $_ ∈ <voice tts> {
             $url ~= '/tts';
             %body = text => $text.Str, voice_id => (%args<voice-id> // %args<voice_id> // 'eve'),
                      language => (%args<language> // 'en');
@@ -62,10 +73,7 @@ multi sub xai-console($text,
         default { die "Unknown xAI path '$path'. Expected chat, code, image, video, or voice." }
     }
 
-    xai-request(:$url, body => to-json(%body), :$auth-key, :$timeout, :$format, :$method, :$echo);
-}
+    note (:%body) if $echo;
 
-sub _input($text, $role) {
-    return $text unless $role ~~ Str:D;
-    [{ role => $role, content => $text.Str }];
+    xai-request(:$url, body => to-json(%body), :$auth-key, :$timeout, :$format, :$method, :$echo);
 }

@@ -31,6 +31,9 @@ sub response-content(%response, Str $url --> Str) {
                 code => $status,
             )
         );
+        if $! {
+            $error = $content.decode;
+        }
         fail $error;
     }
 
@@ -63,8 +66,7 @@ multi sub xai-request(Str:D :$url!,
     die "The argument method is expected to be 'tiny'."
         unless $method.lc eq 'tiny';
 
-    my $response = tiny-post(:$url, body => $body ~~ Map ?? $body !! $body.Str,
-                             :$auth-key, :$timeout);
+    my $response = tiny-post(:$url, body => $body ~~ Map ?? $body !! $body.Str, :$auth-key, :$timeout);
     return $response if $format.isa(Whatever) || $format.lc ∈ <asis as-is as_is>;
 
     my $decoded = try { from-json($response) };
