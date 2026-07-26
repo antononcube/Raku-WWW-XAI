@@ -12,9 +12,36 @@ sub process_input($text, $role) {
     [{ role => $role, content => $text.Str },];
 }
 
+sub is-message($message --> Bool) {
+    if $message ~~ Map {
+        return False unless $message<role>:exists;
+        return $message<content>:exists;
+    }
+    if $message ~~ Pair {
+        return False unless $message.key ~~ Str:D;
+        return $message.value.defined;
+    }
+    False;
+}
+
+sub process_messages(@messages) {
+    return Nil unless @messages.elems;
+
+    my $all-messages = [&&] @messages.map(*.&is-message);
+    return Nil unless $all-messages;
+
+    @messages.map({
+        if $_ ~~ Map {
+            $_
+        } else {
+            %(role => $_.key.Str, content => $_.value.Str)
+        }
+    }).Array;
+}
+
 
 #==========================================================
-#
+# Models
 #==========================================================
 sub xai-models(
         :api-key(:$auth-key) = Whatever,
@@ -36,6 +63,8 @@ multi sub xai-console(*%args) {
 }
 
 multi sub xai-console(@texts, *%args) {
+    my $messages = process_messages(@texts);
+    return xai-console('', input => $messages, |%args) if $messages.defined;
     @texts.map({ xai-console($_, |%args) }).Array;
 }
 

@@ -1,0 +1,24 @@
+use v6.d;
+use Test;
+use WWW::XAI;
+
+if %*ENV<XAI_API_KEY>:exists {
+    plan 3;
+
+    my $answer = xai-console([
+        { role => 'system', content => 'Reply with exactly one word: rocks' },
+        { role => 'user', content => 'Raku rocks.' },
+    ], format => 'values');
+
+    ok $answer ~~ Str && $answer.chars, 'complete messages return assistant text';
+    like $answer.lc, /rocks/, 'complete messages preserve conversation context';
+
+    my $pair-answer = xai-console([
+        system => 'Reply with exactly one word: rocks',
+        user => 'Raku rocks.',
+    ], format => 'values');
+    ok $pair-answer ~~ Str && $pair-answer.chars, 'Pair message shorthand returns assistant text';
+} else {
+    plan 1;
+    skip 'Set XAI_API_KEY to run live message tests', 1;
+}

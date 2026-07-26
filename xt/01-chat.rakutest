@@ -16,7 +16,7 @@ if $has-key {
         :echo
     );
 
-    say (:$answer);
+    # say (:$answer);
     ok $answer ~~ Str && $answer.chars, 'chat returns assistant text';
     like $answer.lc, /pong/, 'chat response contains the requested text';
 } else {
