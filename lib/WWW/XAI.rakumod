@@ -60,6 +60,9 @@ multi sub xai-console(Str:D $text,
             %body = :$model, prompt => $text.Str;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n response_format aspect_ratio>);
         }
+        when $_ ∈ <models> {
+            $url ~= '/models';
+        }
         when $_ ∈ <video videos/generations> {
             $url ~= '/videos/generations';
             %body = :$model, prompt => $text.Str;
@@ -75,5 +78,6 @@ multi sub xai-console(Str:D $text,
 
     note (:%body) if $echo;
 
-    xai-request(:$url, body => to-json(%body), :$auth-key, :$timeout, :$format, :$method, :$echo);
+    xai-request(:$url, body => to-json(%body), :$auth-key, :$timeout, :$format, :$method,
+                http-method => $endpoint eq 'models' ?? 'GET' !! 'POST', :$echo);
 }

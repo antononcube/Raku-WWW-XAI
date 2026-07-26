@@ -5,6 +5,12 @@ use HTTP::Tiny;
 
 proto sub tiny-post(Str :$url!, |) is export {*}
 
+sub tiny-get(Str :$url!, Str :api-key(:$auth-key)!, UInt :$timeout = 10) is export {
+    my $response = HTTP::Tiny.get: $url,
+        headers => { Authorization => "Bearer $auth-key" };
+    response-content($response, $url);
+}
+
 multi sub tiny-post(Str :$url!, Str :$body!, Str :api-key(:$auth-key)!, UInt :$timeout = 10) {
     my $response = HTTP::Tiny.post: $url,
         headers => {
@@ -48,6 +54,7 @@ multi sub xai-request(Str:D :$url!,
                       UInt:D :$timeout = 10,
                       :$format = Whatever,
                       Str:D :$method = 'tiny',
+                      Str:D :$http-method = 'POST',
                       Bool:D :$echo = False) {
     if $auth-key.isa(Whatever) {
         $auth-key = %*ENV<XAI_API_KEY> // %*ENV<GROKXAI_API_KEY> // Whatever;
@@ -66,7 +73,9 @@ multi sub xai-request(Str:D :$url!,
     die "The argument method is expected to be 'tiny'."
         unless $method.lc eq 'tiny';
 
-    my $response = tiny-post(:$url, body => $body ~~ Map ?? $body !! $body.Str, :$auth-key, :$timeout);
+    my $response = $http-method.uc eq 'GET'
+        ?? tiny-get(:$url, :$auth-key, :$timeout)
+        !! tiny-post(:$url, body => $body ~~ Map ?? $body !! $body.Str, :$auth-key, :$timeout);
     return $response if $format.isa(Whatever) || $format.lc ∈ <asis as-is as_is>;
 
     my $decoded = try { from-json($response) };
@@ -88,6 +97,11 @@ multi sub xai-request(Str:D :$url!,
 sub xai-values(Mu $response --> Mu) is export {
     if $response ~~ Map {
         return $response<output_text> if $response<output_text>:exists;
+
+        if $response<data>:exists {
+            my @ids = $response<data>.grep(* ~~ Map).map(*<id>).grep(*.defined);
+            return @ids.join("\n") if @ids;
+        }
     }
 
     my @texts = gather {
