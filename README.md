@@ -197,6 +197,27 @@ xai-console(
 # **Recommendation**: Use the `for` loop — it's the most idiomatic and readable way in Raku.
 ```
 
+### Images
+
+Images can be generated with the sub `xai-console` with the path argument being set to "image".
+For example, here an image is generated and a URL to is returned:
+
+```raku, eval=FALSE
+my $res = xai-console('Generate an image of a raccoon chasing a butterfly.', path => 'image', format => 'values');
+```
+
+Here is an example in which a Base64 string is returned and then rendered as an image:
+
+```raku, eval=FALSE
+use Image::Markup::Utilities;
+my $img = xai-console(
+    'Sketches of butterfly themed playing cards (for bridge, etc.)', 
+    path => 'image', 
+    response-format => 'b64_json',
+    format => 'values');
+image-from-base64($img);
+```
+
 ### Chat completions with engineered prompts
 
 Here is a prompt for "emojification" (see the
