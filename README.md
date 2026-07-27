@@ -17,7 +17,7 @@ This package is very similar to the packages
 
 Also, of course, prompts from 
 ["LLM::Prompts"](https://github.com/antononcube/Raku-LLM-Prompts), [AAp4],
-can be used with MistralAI's functions.
+can be used with XAI's functions.
 
 -----
 
