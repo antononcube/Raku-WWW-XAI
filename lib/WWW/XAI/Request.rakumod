@@ -99,6 +99,7 @@ sub xai-values(Mu $response --> Mu) is export {
         return $response<output_text> if $response<output_text>:exists;
 
         if $response<data>:exists {
+            # Assuming models rere requested
             my @ids = $response<data>.grep(* ~~ Map).map(*<id>).grep(*.defined);
             return @ids.join("\n") if @ids;
         }
@@ -111,6 +112,11 @@ sub xai-values(Mu $response --> Mu) is export {
                     for |%item<content> -> %content {
                         take %content<text> if %content<text>:exists;
                     }
+                }
+            } elsif $response<data>:exists {
+                # Assuming images were generated
+                for |$response<data> -> %item {
+                    take %item<b64_json> // %item<url>
                 }
             }
         }

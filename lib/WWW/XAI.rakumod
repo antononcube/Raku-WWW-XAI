@@ -83,7 +83,6 @@ multi sub xai-console(Str:D $text,
                       :@tools = Empty,
                       :$input = Whatever,
                       *%args) {
-    if $model.isa(Whatever) { $model = 'grok-4.3' }
     my $echo = %args<echo> // False;
     my $endpoint = $path.lc;
     my $url = 'https://api.x.ai/v1';
@@ -91,6 +90,7 @@ multi sub xai-console(Str:D $text,
 
     given $endpoint {
         when $_ ∈ <chat code responses> {
+            if $model.isa(Whatever) { $model = 'grok-4.3' }
             $url ~= '/responses';
             %body<model> = $model;
             %body<input> = $input.isa(Whatever) ?? process_input($text, $role) !! $input;
@@ -101,14 +101,19 @@ multi sub xai-console(Str:D $text,
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <instructions stream store reasoning_effort stop>);
         }
         when $_ ∈ <image images images/generations> {
+            if $model.isa(Whatever) { $model = 'grok-imagine-image-quality' }
+            my $response-format = %args<response-format> // 'url';
+            die "For images the argment \$response-format is expected to be one of 'b64_json', 'url', or Whatever."
+            unless $response-format ∈ <b64_json url>;
             $url ~= '/images/generations';
-            %body = :$model, prompt => $text.Str;
-            %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n response_format aspect_ratio>);
+            %body = :$model, prompt => $text.Str, response_format => $response-format;
+            %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n aspect_ratio>);
         }
         when $_ ∈ <models> {
             $url ~= '/models';
         }
         when $_ ∈ <video videos videos/generations> {
+            if $model.isa(Whatever) { $model = 'grok-imagine-video' }
             $url ~= '/videos/generations';
             %body = :$model, prompt => $text.Str;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <duration aspect_ratio resolution>);
