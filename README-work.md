@@ -187,6 +187,12 @@ graph TD
 
 ## References
 
+### Dashboard & documentation
+
+[XAI1] XI, [XAI console](https://console.x.ai).
+
+[XAI2] XAI Platform documentation, [XAI documentation](https://docs.x.ai/overview).
+
 ### Packages
 
 [AAp1] Anton Antonov,
@@ -213,8 +219,3 @@ graph TD
 [Jupyter::Chatbook Raku package](https://github.com/antononcube/Raku-Jupyter-Chatbook),
 (2023-2026),
 [GitHub/antononcube](https://github.com/antononcube).
-
-[XAI1] XI, [XAI console](https://mistral.ai).
-
-[XAI2] XAI Platform documentation, [XAI documentation](https://docs.x.ai/overview).
-
