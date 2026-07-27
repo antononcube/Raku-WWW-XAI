@@ -53,6 +53,13 @@ sub xai-models(
 }
 
 #==========================================================
+# Get video
+#==========================================================
+sub xai-video-record(Str:D $video-id, *%args) is export {
+    xai-console('', path => 'video', :$video-id, |%args)
+}
+
+#==========================================================
 # XAI console
 #==========================================================
 
@@ -82,9 +89,10 @@ multi sub xai-console(Str:D $text,
                       :$top-p = Whatever,
                       :@tools = Empty,
                       :$input = Whatever,
+                      :$video-id = Whatever,
                       *%args) {
     my $echo = %args<echo> // False;
-    my $endpoint = $path.lc;
+    my $endpoint = $video-id.isa(Whatever) ?? $path.lc !! 'video';
     my $url = 'https://api.x.ai/v1';
     my %body;
 
@@ -114,9 +122,13 @@ multi sub xai-console(Str:D $text,
         }
         when $_ ∈ <video videos videos/generations> {
             if $model.isa(Whatever) { $model = 'grok-imagine-video' }
-            $url ~= '/videos/generations';
-            %body = :$model, prompt => $text.Str;
-            %body{$_} = %args{$_} for %args.keys.grep(* ∈ <duration aspect_ratio resolution>);
+            if $video-id.isa(Whatever) {
+                $url ~= '/videos/generations';
+                %body = :$model, prompt => $text.Str;
+                %body{$_} = %args{$_} for %args.keys.grep(* ∈ <duration aspect_ratio resolution>);
+            } else {
+                $url ~= "/videos/$video-id";
+            }
         }
         when $_ ∈ <voice tts> {
             $url ~= '/tts';
@@ -126,8 +138,9 @@ multi sub xai-console(Str:D $text,
         default { die "Unknown xAI path '$path'. Expected chat, code, image, video, or voice." }
     }
 
+    note (:$url) if $echo;
     note (:%body) if $echo;
 
     xai-request(:$url, body => to-json(%body), :$auth-key, :$timeout, :$format, :$method,
-                http-method => $endpoint eq 'models' ?? 'GET' !! 'POST', :$echo);
+                http-method => ($endpoint eq 'models' || $endpoint eq 'video') ?? 'GET' !! 'POST', :$echo);
 }

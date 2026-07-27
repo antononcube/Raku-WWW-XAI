@@ -7,7 +7,10 @@ proto sub tiny-post(Str :$url!, |) is export {*}
 
 sub tiny-get(Str :$url!, Str :api-key(:$auth-key)!, UInt :$timeout = 10) is export {
     my $response = HTTP::Tiny.get: $url,
-        headers => { Authorization => "Bearer $auth-key" };
+        headers => {
+            Authorization => "Bearer $auth-key",
+            Content-Type => 'application/json',
+        };
     response-content($response, $url);
 }
 
