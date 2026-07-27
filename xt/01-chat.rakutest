@@ -13,7 +13,7 @@ if $has-key {
         path => 'chat',
         model => (%*ENV<XAI_MODEL> // 'grok-4.5'),
         format => 'values',
-        :echo
+        :!echo
     );
 
     # say (:$answer);
