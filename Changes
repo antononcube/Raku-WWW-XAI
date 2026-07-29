@@ -1,5 +1,8 @@
 Changes of the Raku package "WWW::XAI".
 
+2026-07-29 0.1.2
+    - Implemented image edits API calls.
+
 2026-07-27 0.1.1
     - Streamlining video retrieval.
     - Added a Jupyter notebook with usage examples.
