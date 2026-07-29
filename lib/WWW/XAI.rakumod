@@ -6,6 +6,9 @@ use WWW::XAI::Request;
 #==========================================================
 # Utilities
 #==========================================================
+our sub xai-base-url() is export {
+    return 'https://api.x.ai/v1';
+}
 
 sub process_input($text, $role) {
     return $text unless $role ~~ Str:D;
@@ -90,10 +93,11 @@ multi sub xai-console(Str:D $text,
                       :@tools = Empty,
                       :$input = Whatever,
                       :$video-id = Whatever,
+                      :$base-url = xai-base-url(),
                       *%args) {
     my $echo = %args<echo> // False;
     my $endpoint = $video-id.isa(Whatever) ?? $path.lc !! 'video';
-    my $url = 'https://api.x.ai/v1';
+    my $url = $base-url;
     my %body;
 
     given $endpoint {
@@ -108,6 +112,7 @@ multi sub xai-console(Str:D $text,
             %body<tools> = @tools.Array if @tools;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <instructions stream store reasoning_effort stop>);
         }
+
         when $_ ∈ <image images images/generations> {
             if $model.isa(Whatever) { $model = 'grok-imagine-image-quality' }
             my $response-format = %args<response-format> // 'url';
@@ -117,9 +122,42 @@ multi sub xai-console(Str:D $text,
             %body = :$model, prompt => $text.Str, response_format => $response-format;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n aspect_ratio>);
         }
+
+        when $_ ∈ <image-edit images-edits images/edits> {
+            die 'For image edits the argument "image" have to be specified.'
+            unless %args<image>;
+
+            if $model.isa(Whatever) { $model = 'grok-imagine-image-quality' }
+            my $response-format = %args<response-format> // 'url';
+
+            # Regex for Base64 string
+            my $re-base64 = /^ [ 'data:image/' <[a..zA..Z0..9.+-]>+ ';base64,' ]? [ <[A..Za..z0..9+/_\-] > ** 4 ]* [ <[A..Za..z0..9+/_\-] > ** 2 '==' | <[A..Za..z0..9+/_\-] > ** 3 '=' ]? $/;
+
+            # TBD
+            my $image = do given %args<image> {
+                # check if image is a file path
+                when $_.IO.f { '@' ~ $_.IO.Str }
+
+                # check if image is a URL
+                when $_ ~~ / ^ 'http' .? '://' / { %( url => $_, type => 'image_url') }
+
+                # check if it is a Base64 string
+                when $_ ~~ $re-base64 { $_ }
+
+                default {
+                    die 'The value of the argument image is expected to be a URL, file path, or Base64 string.'
+                }
+            }
+
+            $url ~= '/images/edits';
+            %body = :$model, prompt => $text.Str, response_format => $response-format;
+            %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n aspect_ratio>);
+        }
+
         when $_ ∈ <models> {
             $url ~= '/models';
         }
+
         when $_ ∈ <video videos videos/generations> {
             if $model.isa(Whatever) { $model = 'grok-imagine-video' }
             if $video-id.isa(Whatever) {
@@ -130,6 +168,7 @@ multi sub xai-console(Str:D $text,
                 $url ~= "/videos/$video-id";
             }
         }
+
         when $_ ∈ <voice tts> {
             $url ~= '/tts';
             %body = text => $text.Str, voice_id => (%args<voice-id> // %args<voice_id> // 'eve'),
