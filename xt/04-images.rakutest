@@ -1,0 +1,19 @@
+use v6.d;
+use Test;
+use WWW::XAI;
+
+if %*ENV<XAI_API_KEY>:exists {
+    plan 2;
+
+    my $url = 'https://raw.githubusercontent.com/antononcube/Raku-WWW-OpenAI/refs/heads/main/resources/ThreeHunters.jpg';
+    my $res = xai-console('Make a pencil version of the given image.', path => 'images/edits', image => $url, format => 'values', response-format => 'b64_json');
+
+    my $re-base64 = /^ [ 'data:image/' <[a..zA..Z0..9.+-]>+ ';base64,' ]? [ <[A..Za..z0..9+/_\-] > ** 4 ]* [ <[A..Za..z0..9+/_\-] > ** 2 '==' | <[A..Za..z0..9+/_\-] > ** 3 '=' ]? $/;
+
+    isa-ok $res, Str:D, 'result is a string';
+    is $res ~~ $re-base64, True, 'result is a Base64 string';
+
+} else {
+    plan 1;
+    skip 'Set XAI_API_KEY to run live message tests', 1;
+}
