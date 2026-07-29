@@ -135,11 +135,11 @@ multi sub xai-console(Str:D $text,
 
             # TBD
             my $image = do given %args<image> {
-                # check if image is a file path
-                when $_.IO.f { '@' ~ $_.IO.Str }
-
                 # check if image is a URL
                 when $_ ~~ / ^ 'http' .? '://' / { %( url => $_, type => 'image_url') }
+
+                # check if image is a file path
+                when $_.IO.f { '@' ~ $_.IO.Str }
 
                 # check if it is a Base64 string
                 when $_ ~~ $re-base64 { $_ }
@@ -150,7 +150,7 @@ multi sub xai-console(Str:D $text,
             }
 
             $url ~= '/images/edits';
-            %body = :$model, prompt => $text.Str, response_format => $response-format;
+            %body = :$model, prompt => $text.Str, response_format => $response-format, :$image;
             %body{$_} = %args{$_} for %args.keys.grep(* ∈ <n aspect_ratio>);
         }
 
