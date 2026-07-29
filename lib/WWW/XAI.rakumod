@@ -1,6 +1,7 @@
 unit module WWW::XAI;
 
 use JSON::Fast;
+use Image::Markup::Utilities;
 use WWW::XAI::Request;
 
 #==========================================================
@@ -131,6 +132,7 @@ multi sub xai-console(Str:D $text,
             my $response-format = %args<response-format> // 'url';
 
             # Regex for Base64 string
+            my $re-base64-start = /^ [ 'data:image/' <[a..zA..Z0..9.+-]>+ ';base64,' ] /;
             my $re-base64 = /^ [ 'data:image/' <[a..zA..Z0..9.+-]>+ ';base64,' ]? [ <[A..Za..z0..9+/_\-] > ** 4 ]* [ <[A..Za..z0..9+/_\-] > ** 2 '==' | <[A..Za..z0..9+/_\-] > ** 3 '=' ]? $/;
 
             # TBD
@@ -139,10 +141,17 @@ multi sub xai-console(Str:D $text,
                 when $_ ~~ / ^ 'http' .? '://' / { %( url => $_, type => 'image_url') }
 
                 # check if image is a file path
-                when $_.IO.f { '@' ~ $_.IO.Str }
+                when $_ ~~ Str:D && $_.chars ≤ 2000 && $_.IO.f {
+                    my $ext = do with $_ ~~ / '.' (.+) / { $0.Str } // 'png';
+                    my $img = image-encode($_.IO, type => $ext);
+                    %( url => $img, type => 'image_url')
+                }
 
                 # check if it is a Base64 string
-                when $_ ~~ $re-base64 { $_ }
+                when $_ ~~ $re-base64 {
+                    %( url => $_ ~~ $re-base64-start ?? $_ !! 'data:image/png;base64,' ~ $_,
+                       type => 'image_url')
+                }
 
                 default {
                     die 'The value of the argument image is expected to be a URL, file path, or Base64 string.'
