@@ -5,7 +5,7 @@
 This Raku package provides API access to the Large Language Models (LLMs) service [(Space)XAI](https://console.x.ai/), [XAI1].
 For more details of the XAI's API usage see [the documentation](https://docs.x.ai/overview), [XAI2].
 
-**Remark:** To use XAI's API one has to register and obtain authorization key.
+**Remark:** To use XAI'1 API one has to register and obtain authorization key.
 
 This package is very similar to the packages 
 ["WWW::OpenAI"](https://github.com/antononcube/Raku-WWW-OpenAI), [AAp1], and 
@@ -40,12 +40,7 @@ zef install https://github.com/antononcube/Raku-WWW-XAI.git
 
 ----
 
-## Usage examples
-
-**Remark:** When the authorization key, `auth-key`, is specified to be `Whatever`
-then the functions `xai-*` attempt to use the env variable `XAI_API_KEY`.
-
-### Universal "front-end"
+## Universal "front-end"
 
 The package has an universal "front-end" function `xai-console` for the 
 [different functionalities provided by XAI](https://docs.x.ai/overview).
@@ -60,49 +55,50 @@ to-json(from-json($ans), :pretty)
 ```
 # {
 #   "reasoning": {
-#     "effort": "low",
-#     "summary": "detailed"
+#     "summary": "detailed",
+#     "effort": "low"
 #   },
+#   "max_output_tokens": null,
+#   "id": "21b74844-4cab-9e14-b54e-da2443c4b0c2",
+#   "parallel_tool_calls": true,
 #   "temperature": 0.7,
-#   "error": null,
-# ...
-#   "user": null,
-#   "object": "response",
+#   "top_logprobs": 0,
 #   "output": [
 #     {
-#       "id": "rs_2babab5b-0cf3-9717-b51e-f8bfd6334300",
-#       "summary": [
-#         {
-#           "text": "The query is: \"Where is Roger Rabbit?\"\n",
-#           "type": "summary_text"
-#         }
-#       ],
-#       "type": "reasoning",
-#       "status": "completed"
+# ...
+#       "status": "completed",
+#       "type": "reasoning"
 #     },
 #     {
-#       "id": "msg_2babab5b-0cf3-9717-b51e-f8bfd6334300",
-#       "status": "completed",
 #       "content": [
 #         {
+# ...
 #           "type": "output_text",
-#           "annotations": [
-#           ],
-#           "text": "**Toontown.**\n\nHe's probably hiding out there with Jessica, dodging weasels and trying not to get dipped.",
-#           "logprobs": [
-#           ]
+#           "text": "**In Toontown.**\n\n(Last seen there with Jessica, probably dodging anvils and yelling \"P-p-p-please!\")"
 #         }
 #       ],
 #       "role": "assistant",
+#       "status": "completed",
+#       "id": "msg_21b74844-4cab-9e14-b54e-da2443c4b0c2",
 #       "type": "message"
 #     }
 #   ],
-#   "model": "grok-4.3",
+#   "frequency_penalty": 0.0,
+#   "status": "completed",
+#   "service_tier": "default",
+#   "tools": [
+#   ],
 #   "store": true,
-#   "background": false,
 # ...
+#   "text": {
+#     "format": {
+#       "type": "text"
+#     }
+#   }
 # }
 ```
+
+**Remark:** By default `xai-console` returns just a compact JSON string of XAI's response. That is why above, in order to get a pretty JSON display, is used line `to-json(from-json($ans), :pretty)`.
 
 Another one using Bulgarian:
 
@@ -110,10 +106,15 @@ Another one using Bulgarian:
 xai-console('Колко групи могат да се намерят в този облак от точки.', max-tokens => 1024, format => 'values');
 ```
 ```
-# Моля, прикачете изображението или данните за точките – без тях не мога да определя броя на групите.
+# Не виждам никакъв облак от точки (изображение или данни) в съобщението. Моля, качи го или опиши точките, за да мога да отговоря.
 ```
 
-### Models
+**Remark:** When the authorization key, `auth-key`, is specified to be `Whatever`
+then the functions `xai-*` attempt to use the env variable `XAI_API_KEY`.
+
+----
+
+## Models
 
 The current XlAI models can be found with the function `xai-models`:
 
@@ -133,74 +134,76 @@ The current XlAI models can be found with the function `xai-models`:
 # grok-imagine-video-1.5
 ```
 
-### Code generation
+----
 
-There are two types of completions : text and chat. Let us illustrate the differences
-of their usage by Raku code generation. Here is a text completion:
+## Code generation
 
-```raku, result=asis
+XAI'API provides a special endpoint for code generation which is used if `xai-console`'s argument "path" is set to "code". Here is a Raku code generation example:
+
+```raku, results=asis, output-prompt=>
 xai-console(
         'generate Raku code for making a loop over a list',
         path => 'code',
         max-tokens => 1024,
         format => 'values');
 ```
-```
-# Here's how to loop over a list in Raku:
-# 
-# ### Basic `for` loop (most common)
-# 
-# ```raku
-# my @colors = <red green blue>;
-# 
-# for @colors -> $color {
-#     say $color;
-# }
-# ```
-# 
-# ### Using the topic variable `$_`
-# 
-# ```raku
-# for @colors {
-#     say $_;
-# }
-# ```
-# 
-# ### With index (using `.kv`)
-# 
-# ```raku
-# for @colors.kv -> $index, $color {
-#     say "$index: $color";
-# }
-# ```
-# 
-# ### One-liner style
-# 
-# ```raku
-# .say for @colors;
-# ```
-# 
-# ### Using `.map`
-# 
-# ```raku
-# @colors.map({ say $_ });
-# ```
-# 
-# ### With a range of indices
-# 
-# ```raku
-# for ^@colors.elems -> $i {
-#     say @colors[$i];
-# }
-# ```
-# 
-# **Recommendation**: Use the `for` loop — it's the most idiomatic and readable way in Raku.
-```
+>Here's how to loop over a list in **Raku**:
+>
+>### 1. Basic `for` loop (most common)
+>
+>```raku
+>my @fruits = <apple banana cherry>;
+>
+>for @fruits -> $fruit {
+>    say $fruit;
+>}
+>```
+>
+>### 2. Using the topic variable `$_`
+>
+>```raku
+>for @fruits {
+>    say $_;
+>}
+>```
+>
+>### 3. With index (using `.kv`)
+>
+>```raku
+>for @fruits.kv -> $index, $fruit {
+>    say "$index: $fruit";
+>}
+>```
+>
+>### 4. Postfix `for` (concise)
+>
+>```raku
+>say $_ for @fruits;
+>```
+>
+>### 5. Using `map` (when you want to transform)
+>
+>```raku
+>@fruits.map({ say $_ });
+>```
+>
+>### Bonus: C-style loop (less common)
+>
+>```raku
+>loop (my $i = 0; $i < @fruits.elems; $i++) {
+>    say @fruits[$i];
+>}
+>```
+>
+>**Recommendation**: Use the `for` loop (example #1 or #2) — it's the most idiomatic in Raku.
 
-### Images
 
-Images can be generated with the sub `xai-console` with the path argument being set to "image".
-For example, here an image is generated and a URL to is returned:
+----
+
+## Images
+
+Images can be generated with the sub `xai-console` with the argument "path" being set to "image". 
+For example, here an image is generated and a URL to is returned: 
 
 ```raku, eval=FALSE
 my $res = xai-console('Generate an image of a raccoon chasing a butterfly.', path => 'image', format => 'values');
@@ -218,7 +221,9 @@ my $img = xai-console(
 image-from-base64($img);
 ```
 
-### Chat completions with engineered prompts
+----
+
+## Chat completions with engineered prompts
 
 Here is a prompt for "emojification" (see the
 [Wolfram Prompt Repository](https://resources.wolframcloud.com/PromptRepository/)
@@ -235,16 +240,9 @@ Respond only with the modified text, do not include any summary or explanation.
 Do not respond with only emoji, most of the text should remain as normal words.
 END
 ```
-```
-# Rewrite the following text and convert some of it into emojis.
-# The emojis are all related to whatever is in the text.
-# Keep a lot of the text, but convert key words into emojis.
-# Do not modify the text except to add emoji.
-# Respond only with the modified text, do not include any summary or explanation.
-# Do not respond with only emoji, most of the text should remain as normal words.
-```
 
-Here is an example of chat completion with emojification:
+
+Here is an example of a chat completion with emojification:
 
 ```raku
 xai-console([ system => $preEmojify, user => 'Python sucks, Raku rocks, and Perl is annoying'], max-tokens => 1024, format => 'values')
@@ -257,8 +255,6 @@ xai-console([ system => $preEmojify, user => 'Python sucks, Raku rocks, and Perl
 
 ## Command Line Interface
 
-### Console access
-
 The package provides a Command Line Interface (CLI) script:
 
 ```shell
@@ -266,15 +262,17 @@ xai-console --help
 ```
 ```
 # Usage:
-#   xai-console.raku <text> [--path=<Str>] [--mt|--max-tokens[=UInt]] [-m|--model=<Str>] [-r|--role=<Str>] [-t|--temperature[=Real]] [-a|--auth-key=<Str>] [--timeout[=UInt]] [-f|--format=<Str>] [--method=<Str>] -- API access to XAI LLMs.
-#   xai-console.raku [<words> ...] [--path=<Str>] [--mt|--max-tokens[=UInt]] [-m|--model=<Str>] [-r|--role=<Str>] [-t|--temperature[=Real]] [-a|--auth-key=<Str>] [--timeout[=UInt]] [-f|--format=<Str>] [--method=<Str>]
+#   xai-console <text> [--path=<Str>] [--mt|--max-tokens[=UInt]] [-m|--model=<Str>] [-r|--role=<Str>] [-t|--temperature[=Real]] [--response-format=<Str>] [--video-id=<Str>] [-a|--auth-key=<Str>] [--timeout[=UInt]] [-f|--format=<Str>] [--method=<Str>] -- API access to XAI LLMs.
+#   xai-console [<words> ...] [--path=<Str>] [--mt|--max-tokens[=UInt]] [-m|--model=<Str>] [-r|--role=<Str>] [-t|--temperature[=Real]] [--response-format=<Str>] [--video-id=<Str>] [-a|--auth-key=<Str>] [--timeout[=UInt]] [-f|--format=<Str>] [--method=<Str>]
 #   
 #     <text>                      Text to be processed or audio file name.
-#     --path=<Str>                Path, one of 'chat', 'code', 'image', 'video', or 'voice'. [default: 'chat']
+#     --path=<Str>                Path, one of "chat", "code", "image", "video", "voice", or "Whatever". [default: 'Whatever']
 #     --mt|--max-tokens[=UInt]    The maximum number of tokens to generate in the completion. [default: 2048]
 #     -m|--model=<Str>            Model. [default: 'Whatever']
 #     -r|--role=<Str>             Role. [default: 'user']
 #     -t|--temperature[=Real]     Temperature. [default: 0.7]
+#     --response-format=<Str>     The format in which the response is returned. [default: 'url']
+#     --video-id=<Str>            Video identifier to retrieve record of. [default: 'Whatever']
 #     -a|--auth-key=<Str>         Authorization key (to use XAI API.) [default: 'Whatever']
 #     --timeout[=UInt]            Timeout. [default: 10]
 #     -f|--format=<Str>           Format of the result; one of "json", "hash", "values", or "Whatever". [default: 'Whatever']
@@ -284,6 +282,30 @@ xai-console --help
 **Remark:** When the authorization key argument "auth-key" is specified set to "Whatever"
 then `xai-console` attempts to use the env variable `XAI_API_KEY`.
 
+
+**Remark:** When the authorization key argument "auth-key" is specified set to `Whatever` then `xai-console` attempts to use the env variable `XAI_API_KEY`.
+
+Here we submit a video request via the CLI script:
+
+```
+xai-console --path=video 'An otter swimming to boat and offering a fish.' --format='asis'
+```
+
+```
+# {request_id => 938fe8b9-86b9-9b8d-9cfc-3f740e8c4bd7}
+```
+
+**Remark:** It takes awhile to create the video, hence we just get a video identifier as a response.
+
+Here we get the URL (and other metadata) of the created video:
+
+```
+xai-console --video-id=938fe8b9-86b9-9b8d-9cfc-3f740e8c4bd7
+```
+
+```
+# {model => grok-imagine-video, progress => 100, status => done, usage => {cost_in_usd_ticks => 4000000000}, video => {duration => 8, respect_moderation => True, url => https://vidgen.x.ai/xai-vidgen-bucket/xai-video-938fe8b9-86b9-9b8d-9cfc-3f740e8c4bd7.mp4}}
+```
 
 --------
 
@@ -322,9 +344,63 @@ graph TD
 	PJ --> TO
 ```
 
+
+----
+
+## Integration with "LLM::Functions"
+
+Since XAI's API does not provide embeddings, for now XAI is not by _default_ integrated with ["LLM::Functions"](https://raku.land/zef:antononcube/LLM::Functions), [AAp3]. Here is an LLM-configuration object for accessing XAI's LLMs:
+
+```raku
+use LLM::Functions;
+
+my &xaichat = sub ($prompt, *%args) { xai-console($prompt, path => 'chat', format => 'values', |%args) };
+
+my $conf = llm-configuration('ChatGPT', 
+    name => 'ChatXAI', 
+    module => 'WWW::XAI',
+    model => 'grok-4.2', 
+    base-url => xai-base-url, 
+    function => &xaichat
+)
+```
+```
+# LLM::Configuration(:name("ChatXAI"), :model("grok-4.2"), :module("WWW::XAI"), :max-tokens(2048))
+```
+
+
+Here is an LLM-invocation using the XAI-access configuration above:
+
+```raku
+llm-synthesize('Hi! What model are you? From which service? When you were trained?', e => $conf)
+```
+```
+# Hi! I'm **Grok**, built by **xAI**.
+# 
+# - **Model**: I'm based on xAI's Grok model family (the original Grok-1 and its successors).
+# - **Service**: xAI
+# - **Training**: My training data goes up to around late 2023 / early 2024 (depending on the specific version), though xAI doesn't publish an exact cutoff date like some other labs.
+```
+
+----
+
+## Integration with "Jupyter::Chatbook"
+
+**Jupyter chatbook** (i.e., LLM-enabled Jupyter notebook) is integrated with the package "WWW::XAI" in three ways:
+
+- "WWW::XAI" is loaded in each chatbook session
+- The magic cell `%%xai` can be used to access with XAI's LLMs
+- The magic cell `%%xai-images` can be used to generate images with XAI's creation or editing models
+
+For more details see the notebook ["Raku-access-to-XAI-LLMs.ipynb"](docs/Raku-access-to-XAI-LLMs.ipynb) or [AA1]. 
+
 --------
 
 ## References
+
+### Articles, blog posts
+
+[AA1] Anton Antonov, ["Raku access to XAI LLMs"](https://rakuforprediction.wordpress.com/2026/07/30/raku-api-access-to-xai/), (2026), [RakuForPrediction at WordPress](https://rakuforprediction.wordpress.com).
 
 ### Dashboard & documentation
 
@@ -358,4 +434,3 @@ graph TD
 [Jupyter::Chatbook Raku package](https://github.com/antononcube/Raku-Jupyter-Chatbook),
 (2023-2026),
 [GitHub/antononcube](https://github.com/antononcube).
-

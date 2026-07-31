@@ -40,12 +40,7 @@ zef install https://github.com/antononcube/Raku-WWW-XAI.git
 
 ----
 
-## Usage examples
-
-**Remark:** When the authorization key, `auth-key`, is specified to be `Whatever`
-then the functions `xai-*` attempt to use the env variable `XAI_API_KEY`.
-
-### Universal "front-end"
+## Universal "front-end"
 
 The package has an universal "front-end" function `xai-console` for the 
 [different functionalities provided by XAI](https://docs.x.ai/overview).
@@ -58,13 +53,20 @@ my $ans = xai-console('Where is Roger Rabbit?');
 to-json(from-json($ans), :pretty)
 ```
 
+**Remark:** By default `xai-console` returns just a compact JSON string of XAI's response. That is why above, in order to get a pretty JSON display, is used line `to-json(from-json($ans), :pretty)`.
+
 Another one using Bulgarian:
 
 ```raku
 xai-console('Колко групи могат да се намерят в този облак от точки.', max-tokens => 1024, format => 'values');
 ```
 
-### Models
+**Remark:** When the authorization key, `auth-key`, is specified to be `Whatever`
+then the functions `xai-*` attempt to use the env variable `XAI_API_KEY`.
+
+----
+
+## Models
 
 The current XlAI models can be found with the function `xai-models`:
 
@@ -72,12 +74,13 @@ The current XlAI models can be found with the function `xai-models`:
 .say for |xai-models;
 ```
 
-### Code generation
+----
 
-There are two types of completions : text and chat. Let us illustrate the differences
-of their usage by Raku code generation. Here is a text completion:
+## Code generation
 
-```raku, result=asis
+XAI'API provides a special endpoint for code generation which is used if `xai-console`'s argument "path" is set to "code". Here is a Raku code generation example:
+
+```raku, results=asis, output-prompt=>
 xai-console(
         'generate Raku code for making a loop over a list',
         path => 'code',
@@ -85,9 +88,11 @@ xai-console(
         format => 'values');
 ```
 
-### Images
+----
 
-Images can be generated with the sub `xai-console` with the path argument being set to "image". 
+## Images
+
+Images can be generated with the sub `xai-console` with the argument "path" being set to "image". 
 For example, here an image is generated and a URL to is returned: 
 
 ```raku, eval=FALSE
@@ -106,7 +111,9 @@ my $img = xai-console(
 image-from-base64($img);
 ```
 
-### Chat completions with engineered prompts
+----
+
+## Chat completions with engineered prompts
 
 Here is a prompt for "emojification" (see the
 [Wolfram Prompt Repository](https://resources.wolframcloud.com/PromptRepository/)
@@ -124,7 +131,7 @@ Do not respond with only emoji, most of the text should remain as normal words.
 END
 ```
 
-Here is an example of chat completion with emojification:
+Here is an example of a chat completion with emojification:
 
 ```raku
 xai-console([ system => $preEmojify, user => 'Python sucks, Raku rocks, and Perl is annoying'], max-tokens => 1024, format => 'values')
@@ -133,8 +140,6 @@ xai-console([ system => $preEmojify, user => 'Python sucks, Raku rocks, and Perl
 -------
 
 ## Command Line Interface
-
-### Console access
 
 The package provides a Command Line Interface (CLI) script:
 
@@ -145,6 +150,30 @@ xai-console --help
 **Remark:** When the authorization key argument "auth-key" is specified set to "Whatever"
 then `xai-console` attempts to use the env variable `XAI_API_KEY`.
 
+
+**Remark:** When the authorization key argument "auth-key" is specified set to `Whatever` then `xai-console` attempts to use the env variable `XAI_API_KEY`.
+
+Here we submit a video request via the CLI script:
+
+```
+xai-console --path=video 'An otter swimming to boat and offering a fish.' --format='asis'
+```
+
+```
+# {request_id => 938fe8b9-86b9-9b8d-9cfc-3f740e8c4bd7}
+```
+
+**Remark:** It takes awhile to create the video, hence we just get a video identifier as a response.
+
+Here we get the URL (and other metadata) of the created video:
+
+```
+xai-console --video-id=938fe8b9-86b9-9b8d-9cfc-3f740e8c4bd7
+```
+
+```
+# {model => grok-imagine-video, progress => 100, status => done, usage => {cost_in_usd_ticks => 4000000000}, video => {duration => 8, respect_moderation => True, url => https://vidgen.x.ai/xai-vidgen-bucket/xai-video-938fe8b9-86b9-9b8d-9cfc-3f740e8c4bd7.mp4}}
+```
 
 --------
 
@@ -183,9 +212,53 @@ graph TD
 	PJ --> TO
 ```
 
+
+----
+
+## Integration with "LLM::Functions"
+
+Since XAI's API does not provide embeddings, for now XAI is not by _default_ integrated with ["LLM::Functions"](https://raku.land/zef:antononcube/LLM::Functions), [AAp3]. Here is an LLM-configuration object for accessing XAI's LLMs:
+
+```raku
+use LLM::Functions;
+
+my &xaichat = sub ($prompt, *%args) { xai-console($prompt, path => 'chat', format => 'values', |%args) };
+
+my $conf = llm-configuration('ChatGPT', 
+    name => 'ChatXAI', 
+    module => 'WWW::XAI',
+    model => 'grok-4.2', 
+    base-url => xai-base-url, 
+    function => &xaichat
+)
+```
+
+
+Here is an LLM-invocation using the XAI-access configuration above:
+
+```raku
+llm-synthesize('Hi! What model are you? From which service? When you were trained?', e => $conf)
+```
+
+----
+
+## Integration with "Jupyter::Chatbook"
+
+**Jupyter chatbook** (i.e., LLM-enabled Jupyter notebook) is integrated with the package "WWW::XAI" in three ways:
+
+- "WWW::XAI" is loaded in each chatbook session
+- The magic cell `%%xai` can be used to access with XAI's LLMs
+- The magic cell `%%xai-images` can be used to generate images with XAI's creation or editing models
+
+For more details see the notebook ["Raku-access-to-XAI-LLMs.ipynb"](docs/Raku-access-to-XAI-LLMs.ipynb) or [AA1]. 
+
 --------
 
 ## References
+
+### Articles, blog posts
+
+[AA1] Anton Antonov, ["Raku access to XAI LLMs"](https://rakuforprediction.wordpress.com/2026/07/30/raku-api-access-to-xai/), (2026), [RakuForPrediction at WordPress](https://rakuforprediction.wordpress.com).
 
 ### Dashboard & documentation
 
