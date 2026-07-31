@@ -5,7 +5,7 @@
 This Raku package provides API access to the Large Language Models (LLMs) service [(Space)XAI](https://console.x.ai/), [XAI1].
 For more details of the XAI's API usage see [the documentation](https://docs.x.ai/overview), [XAI2].
 
-**Remark:** To use the XAO API one has to register and obtain authorization key.
+**Remark:** To use XAI'1 API one has to register and obtain authorization key.
 
 This package is very similar to the packages 
 ["WWW::OpenAI"](https://github.com/antononcube/Raku-WWW-OpenAI), [AAp1], and 
