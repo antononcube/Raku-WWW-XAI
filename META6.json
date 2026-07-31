@@ -1,7 +1,7 @@
 {
     "name": "WWW::XAI",
     "description": "WWW::XAI provides API access to the xAI console (https://console.x.ai/).",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "authors": [
         "Anton Antonov"
     ],
